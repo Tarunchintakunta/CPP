@@ -10,14 +10,15 @@ A cloud-based application that helps users register products,
 upload warranty documents, set expiry reminders, and track
 service history. Built entirely on AWS serverless services.
 
-AWS SERVICES USED (6)
+AWS SERVICES USED (7)
 ---------------------
 1. S3              - Frontend hosting + warranty document storage
 2. DynamoDB        - NoSQL database (products, warranties, service history)
 3. Lambda          - Serverless backend (all API handlers)
 4. API Gateway     - REST API with Cognito authorizer
 5. Cognito         - User authentication (signup/login/JWT)
-6. CloudWatch      - Scheduled daily warranty expiry checks + logs
+6. SES             - Email notifications for expiring warranties
+7. CloudWatch      - Scheduled daily warranty expiry checks + logs
 
 CUSTOM LIBRARY
 --------------

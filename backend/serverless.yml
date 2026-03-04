@@ -16,6 +16,7 @@ provider:
     DOCUMENTS_BUCKET: ${self:service}-documents-${self:provider.stage}
     COGNITO_USER_POOL_ID: !Ref CognitoUserPool
     COGNITO_CLIENT_ID: !Ref CognitoUserPoolClient
+    SES_SENDER_EMAIL: ${self:custom.sesEmail}
   iam:
     role:
       statements:
@@ -46,11 +47,17 @@ provider:
             - cognito-idp:AdminGetUser
           Resource:
             - !GetAtt CognitoUserPool.Arn
+        - Effect: Allow
+          Action:
+            - ses:SendEmail
+            - ses:SendRawEmail
+          Resource: "*"
 
 plugins:
   - serverless-python-requirements
 
 custom:
+  sesEmail: ${opt:ses-email, 'noreply@warrantytracker.com'}
   pythonRequirements:
     dockerizePip: false
     layer: false
