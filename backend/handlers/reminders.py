@@ -1,7 +1,6 @@
 """Lambda handler for scheduled warranty expiry checks via CloudWatch Events."""
 
 import os
-import boto3
 
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -10,10 +9,7 @@ from utils.db import WARRANTIES_TABLE, PRODUCTS_TABLE, scan_table, get_item
 
 from warranty_tracker import ReminderScheduler
 
-ses_client = boto3.client("ses")
 reminder_scheduler = ReminderScheduler(threshold_days=30)
-
-SES_SENDER_EMAIL = os.environ.get("SES_SENDER_EMAIL", "noreply@warrantytracker.com")
 
 
 def _get_product_name(product_id):
@@ -22,27 +18,11 @@ def _get_product_name(product_id):
     return item.get("name", "Unknown Product") if item else "Unknown Product"
 
 
-def _send_ses_email(to_email, subject, body):
-    """Send an email via Amazon SES."""
-    try:
-        ses_client.send_email(
-            Source=SES_SENDER_EMAIL,
-            Destination={"ToAddresses": [to_email]},
-            Message={
-                "Subject": {"Data": subject, "Charset": "UTF-8"},
-                "Body": {"Text": {"Data": body, "Charset": "UTF-8"}},
-            },
-        )
-        print(f"SES email sent to {to_email}: {subject}")
-    except Exception as e:
-        print(f"SES email failed for {to_email}: {e}")
-
-
 def check_expiring(event, context):
-    """Scheduled function: scan all warranties, send SES email reminders.
+    """Scheduled function: scan all warranties, log expiring ones to CloudWatch.
 
     Triggered daily by CloudWatch Events.
-    Sends email notifications via SES for warranties expiring within 30 days.
+    Logs warnings for warranties expiring within 30 days.
     """
     all_warranties = scan_table(WARRANTIES_TABLE)
 
@@ -53,7 +33,6 @@ def check_expiring(event, context):
             users.setdefault(uid, []).append(w)
 
     total_expiring = 0
-    total_emails_sent = 0
 
     for user_id, warranties in users.items():
         expiring = reminder_scheduler.find_expiring_warranties(warranties)
@@ -67,19 +46,16 @@ def check_expiring(event, context):
                 w, w.get("user_email", "")
             )
 
-            print(f"Expiring warranty: user={user_id}, warranty={w.get('id')}, "
-                  f"days_remaining={w.get('days_remaining')}, provider={w.get('provider')}")
-
-            user_email = w.get("user_email")
-            if user_email:
-                _send_ses_email(user_email, notification["subject"], notification["body"])
-                total_emails_sent += 1
+            print(f"WARNING - Expiring warranty: user={user_id}, "
+                  f"product={product_name}, warranty={w.get('id')}, "
+                  f"days_remaining={w.get('days_remaining')}, "
+                  f"provider={w.get('provider')}, "
+                  f"end_date={w.get('end_date')}")
 
     result = {
         "message": "Warranty expiry check completed",
         "total_warranties_scanned": len(all_warranties),
         "total_expiring": total_expiring,
-        "total_emails_sent": total_emails_sent,
     }
     print(f"Reminder check result: {result}")
     return result
