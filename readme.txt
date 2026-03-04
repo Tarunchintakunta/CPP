@@ -115,5 +115,4 @@ DEPLOYMENT STEPS
 
 DEPLOYED URL
 ------------
-(To be updated after deployment)
-http://<frontend-bucket>.s3-website-eu-west-1.amazonaws.com
+http://warranty-tracker-frontend-prod.s3-website-eu-west-1.amazonaws.com

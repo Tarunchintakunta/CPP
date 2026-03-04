@@ -54,6 +54,7 @@ custom:
   pythonRequirements:
     dockerizePip: false
     layer: false
+    pythonBin: python3
 
 package:
   individually: false
